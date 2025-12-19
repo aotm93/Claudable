@@ -24,8 +24,7 @@
     "prisma:studio": "prisma studio",
     "prisma:reset": "prisma migrate reset",
     "setup": "npm install && prisma generate && prisma db push",
-    "check-cli": "node scripts/check-claude-cli.js",
-   
+    "check-cli": "node scripts/check-claude-cli.js"
   },
   "dependencies": {
     "@anthropic-ai/claude-agent-sdk": "^0.1.22",

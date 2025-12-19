@@ -15,7 +15,6 @@ RUN npx prisma generate
 
 COPY . .
 
-# 构建会生成 .next/standalone
 RUN npm run build
 
 # ==================================
@@ -36,12 +35,12 @@ COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/public ./public
 
-# 复制 Prisma（standalone 不包含）
+# 复制 Prisma
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
 
 EXPOSE 3000
 
-# 使用 standalone 的正确启动方式
-CMD ["sh", "-c", "npx prisma db push --accept-data-loss && node server.js"]
+# 先不执行 prisma db push，直接启动看是否能运行
+CMD ["node", "server.js"]

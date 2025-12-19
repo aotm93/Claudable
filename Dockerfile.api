@@ -42,5 +42,5 @@ COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
 
 EXPOSE 3000
 
-# 启动时执行 Prisma 迁移，失败也继续运行
-CMD sh -c "npx prisma db push --accept-data-loss --skip-generate || echo 'Prisma migration skipped' && node server.js"
+# 移除 --skip-generate 参数
+CMD sh -c "npx prisma db push --accept-data-loss || echo 'Prisma migration skipped' && node server.js"

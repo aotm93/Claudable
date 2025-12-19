@@ -10,7 +10,6 @@ RUN apk add --no-cache libc6-compat
 COPY package*.json ./
 COPY prisma ./prisma/
 
-# 使用 npm install 代替 npm ci（会自动同步锁文件）
 RUN npm install
 
 RUN npx prisma generate
@@ -35,13 +34,17 @@ ENV NODE_ENV=production
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
-COPY --from=builder /app/package*.json ./
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/.next ./.next
+# 复制 standalone 输出
+COPY --from=builder /app/.next/standalone ./
+COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/prisma ./prisma
 
+# 需要复制 node_modules 中的 Prisma Client
+COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
+COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
+
 EXPOSE 3000
 
-# 只保留一个 CMD，并确保监听 0.0.0.0
-CMD ["npm", "start"]
+# 使用 standalone 模式的正确启动方式
+CMD ["sh", "-c", "npx prisma db push --accept-data-loss && node server.js"]

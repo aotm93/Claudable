@@ -36,11 +36,8 @@ COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/public ./public
 
 # 复制 Prisma 相关文件
-COPY --from=builder /app/prisma ./prisma
-COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
-COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
-COPY --from=builder /app/node_modules/prisma ./node_modules/prisma
-COPY --from=builder /app/node_modules/effect ./node_modules/effect
+COPY --from=builder /app/node_modules ./node_modules
+
 # 复制启动脚本
 COPY --from=builder /app/start.sh ./start.sh
 RUN chmod +x /app/start.sh

@@ -1,4 +1,6 @@
+# ==========================================
 # 构建阶段
+# ==========================================
 FROM node:22-alpine AS builder
 
 WORKDIR /app
@@ -8,8 +10,8 @@ RUN apk add --no-cache libc6-compat
 COPY package*.json ./
 COPY prisma ./prisma/
 
-# 正常安装，@qwen-code/qwen-code 在 package.json 中
-RUN npm ci
+# 使用 npm install 代替 npm ci（会自动同步锁文件）
+RUN npm install
 
 RUN npx prisma generate
 
@@ -17,14 +19,21 @@ COPY . .
 
 RUN npm run build
 
+# ==========================================
 # 运行阶段
+# ==========================================
 FROM node:22-alpine AS runner
 
 WORKDIR /app
 
 RUN apk add --no-cache libc6-compat
 
+# 如果运行时需要 qwen-code
+RUN npm install -g @qwen-code/qwen-code@latest
+
 ENV NODE_ENV=production
+ENV PORT=3000
+ENV HOSTNAME="0.0.0.0"
 
 COPY --from=builder /app/package*.json ./
 COPY --from=builder /app/node_modules ./node_modules
@@ -34,5 +43,5 @@ COPY --from=builder /app/prisma ./prisma
 
 EXPOSE 3000
 
-# 如果需要在启动时初始化数据库
-CMD ["sh", "-c", "npx prisma db push --accept-data-loss && npm start"]
+# 只保留一个 CMD，并确保监听 0.0.0.0
+CMD ["npm", "start"]

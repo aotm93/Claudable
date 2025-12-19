@@ -15,7 +15,7 @@
     "package:mac": "npm run build && electron-builder --mac",
     "package:win": "npm run build && electron-builder --win",
     "package:linux": "npm run build && electron-builder --linux",
-    "start": "npx prisma db push --accept-data-loss && next start",
+    "start": "npx prisma db push --accept-data-loss && next start -H 0.0.0.0 -p 3000",
     "lint": "next lint",
     "type-check": "tsc --noEmit",
     "prisma:generate": "prisma generate",

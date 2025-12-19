@@ -35,15 +35,19 @@ COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/public ./public
 
-# 复制 Prisma
+# 复制 Prisma 相关文件
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
-
-# 复制 prisma CLI（解决 npx 下载 .2.0 的问题）
 COPY --from=builder /app/node_modules/prisma ./node_modules/prisma
+
+# 复制启动脚本
+COPY --from=builder /app/start.sh ./start.sh
+RUN chmod +x /app/start.sh
+
+# 创建数据目录
+RUN mkdir -p /app/data
 
 EXPOSE 3000
 
-# 使用本地 prisma 而不是 npx（避免下载 7.2.0）
-CMD sh -c "node node_modules/prisma/build/index.js db push --accept-data-loss || echo 'Prisma migration skipped' && node server.js"
+CMD ["/app/start.sh"]

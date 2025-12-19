@@ -36,6 +36,8 @@ COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/public ./public
 
 # 复制 Prisma 相关文件
+COPY --from=builder /app/prisma ./prisma
+# ✅ 复制完整的 node_modules（包含所有依赖）
 COPY --from=builder /app/node_modules ./node_modules
 
 # 复制启动脚本

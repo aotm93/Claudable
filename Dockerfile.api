@@ -10,7 +10,8 @@ RUN apk add --no-cache libc6-compat
 COPY package*.json ./
 COPY prisma ./prisma/
 
-RUN npm ci --include=dev
+# 不删除锁文件，但强制安装
+RUN npm install --no-package-lock
 
 RUN npx prisma generate
 

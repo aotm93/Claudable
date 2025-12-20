@@ -728,7 +728,63 @@ class PreviewManager {
       previewBounds.end
     );
 
-    const initialUrl = `http://localhost:${preferredPort}`;
+    // Resolve the correct hostname for the preview URL
+    // Support for remote environments like Codespaces, GitHub Dev, Zeabur, etc.
+    const resolvePreviewHostname = (): string => {
+      // 1. Check for explicit environment variable override
+      if (process.env.PREVIEW_HOST) {
+        return process.env.PREVIEW_HOST.trim();
+      }
+
+      // 2. Check for Zeabur environment
+      // Zeabur sets ZEABUR=1 and provides ZEABUR_URL or similar
+      if (process.env.ZEABUR === '1' || process.env.ZEABUR_SERVICE_ID) {
+        // Try to extract domain from ZEABUR_URL or use APP_DOMAIN
+        if (process.env.ZEABUR_URL) {
+          try {
+            const url = new URL(process.env.ZEABUR_URL);
+            return url.hostname;
+          } catch {
+            // Invalid URL, continue to next check
+          }
+        }
+        // Fallback to APP_DOMAIN for Zeabur
+        if (process.env.APP_DOMAIN) {
+          return process.env.APP_DOMAIN;
+        }
+      }
+
+      // 3. Check for Codespaces environment
+      if (process.env.CODESPACES === 'true' && process.env.CODESPACE_NAME) {
+        const codespaceName = process.env.CODESPACE_NAME;
+        return `${codespaceName}-${preferredPort}.preview.app.github.dev`;
+      }
+
+      // 4. Check for GitHub Dev environment
+      if (process.env.GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN) {
+        return process.env.GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN;
+      }
+
+      // 5. Check for custom domain from environment
+      if (process.env.APP_DOMAIN) {
+        return process.env.APP_DOMAIN;
+      }
+
+      // 6. Check if running in production (NODE_ENV=production)
+      // In production, we should NOT use localhost
+      if (process.env.NODE_ENV === 'production') {
+        // Try to get hostname from request headers (if available)
+        // This is a fallback - ideally APP_DOMAIN should be set
+        console.warn('[PreviewManager] Running in production without PREVIEW_HOST or APP_DOMAIN set. Using 0.0.0.0 as fallback.');
+        return '0.0.0.0';
+      }
+
+      // 7. Default to localhost for local development
+      return 'localhost';
+    };
+
+    const hostname = resolvePreviewHostname();
+    const initialUrl = `http://${hostname}:${preferredPort}`;
 
     const env: NodeJS.ProcessEnv = {
       ...process.env,

@@ -11,7 +11,18 @@ COPY package*.json ./
 COPY prisma ./prisma/
 
 # 安装所有依赖（包括 devDependencies，构建时需要）
-RUN npm ci || npm install
+# 添加详细日志以便调试
+RUN echo "📦 Installing dependencies..." && \
+    if [ -f package-lock.json ]; then \
+      echo "✅ package-lock.json found, using npm ci" && \
+      npm ci; \
+    else \
+      echo "⚠️  package-lock.json not found, using npm install" && \
+      npm install; \
+    fi && \
+    echo "✅ Dependencies installed successfully" && \
+    echo "📋 Checking for tailwindcss..." && \
+    npm list tailwindcss || echo "⚠️  tailwindcss not found in node_modules"
 
 RUN npx prisma generate
 

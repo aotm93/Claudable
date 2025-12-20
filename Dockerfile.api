@@ -11,20 +11,15 @@ COPY package*.json ./
 COPY prisma ./prisma/
 
 # 安装所有依赖（包括 devDependencies，构建时需要）
-# 添加详细日志以便调试
+# 使用 npm install 而不是 npm ci 以避免锁文件不兼容问题
 RUN echo "📦 Installing dependencies..." && \
-    if [ -f package-lock.json ]; then \
-      echo "✅ package-lock.json found, using npm ci" && \
-      npm ci; \
-    else \
-      echo "⚠️  package-lock.json not found, using npm install" && \
-      npm install; \
-    fi && \
+    npm install && \
     echo "✅ Dependencies installed successfully" && \
     echo "📋 Checking for tailwindcss..." && \
     npm list tailwindcss || echo "⚠️  tailwindcss not found in node_modules"
 
-RUN npx prisma generate
+# 生成 Prisma 客户端（使用项目中指定的版本）
+RUN npx prisma@6.1.0 generate
 
 COPY . .
 

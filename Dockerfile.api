@@ -28,19 +28,16 @@ WORKDIR /app
 RUN apk add --no-cache \
     libc6-compat \
     curl \
-    bash \
-    gcompat
+    bash
 
-# 下载并安装最新版本的 Qwen Code CLI（预编译二进制）
-# 注意：确保可执行文件名为 'qwen' 以匹配代码中的调用
-RUN curl -fsSL https://raw.githubusercontent.com/QwenLM/Qwen-Code/main/install.sh | bash || \
-    (echo "⚠️  Official install script failed, trying manual installation..." && \
-     curl -L -o /usr/local/bin/qwen https://github.com/QwenLM/Qwen-Code/releases/latest/download/qwen-code-linux-amd64 && \
-     chmod +x /usr/local/bin/qwen && \
-     echo "✅ Qwen CLI installed manually as 'qwen'")
+# 安装 Qwen Code CLI（通过 npm 全局安装）
+# 注意：Qwen CLI 是 npm 包，不是独立的二进制文件
+RUN npm install -g @qwen-code/qwen-code@latest && \
+    echo "✅ Qwen CLI installed via npm"
 
 # 验证 Qwen CLI 安装
-RUN which qwen || (echo "❌ ERROR: Qwen CLI not found in PATH" && exit 1)
+RUN which qwen && qwen --version || \
+    (echo "❌ ERROR: Qwen CLI not found in PATH" && exit 1)
 
 ENV NODE_ENV=production
 ENV PORT=3000

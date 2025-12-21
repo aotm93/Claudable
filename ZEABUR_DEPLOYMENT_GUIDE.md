@@ -3,18 +3,27 @@
 ## 🚀 快速部署步骤
 
 ### 1. 确认修复已应用
-✅ [`Dockerfile`](Dockerfile) 已经包含以下关键修复：
+✅ **双重修复方案已应用**：
+
+**Dockerfile 修复**：
 - 使用 `npm install --include=dev` 确保安装 devDependencies
 - 添加 Qwen CLI 符号链接处理
 - 添加 `gcompat` 系统包
 - 优化运行时依赖复制
 
+**Package.json 修复**：
+- 将关键构建依赖移到 `dependencies`：
+  - `tailwindcss`: `^3.4.17`
+  - `postcss`: `^8.4.49`
+  - `autoprefixer`: `^10.4.20`
+
 ### 2. 提交更改到 Git
 ```bash
-git add Dockerfile
+git add Dockerfile package.json
 git commit -m "fix: 修复 Zeabur 部署中的 tailwindcss 和 Qwen CLI 问题
 
-- 使用 npm install --include=dev 确保安装 devDependencies  
+- 将 tailwindcss、postcss、autoprefixer 移到 dependencies
+- 使用 npm install --include=dev 确保安装 devDependencies
 - 添加 Qwen CLI 符号链接 qwen-code -> qwen
 - 复制必要的 Prisma 运行时文件
 - 添加 gcompat 系统包提供兼容性"

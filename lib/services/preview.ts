@@ -731,42 +731,68 @@ class PreviewManager {
     // Resolve the correct hostname for the preview URL
     // Support for remote environments like Codespaces, GitHub Dev, Zeabur, etc.
     const resolvePreviewHostname = (): string => {
+      console.log('[PreviewManager] DEBUG: Environment variables for hostname resolution:');
+      console.log(`  PREVIEW_HOST: ${process.env.PREVIEW_HOST || 'undefined'}`);
+      console.log(`  ZEABUR: ${process.env.ZEABUR || 'undefined'}`);
+      console.log(`  ZEABUR_SERVICE_ID: ${process.env.ZEABUR_SERVICE_ID || 'undefined'}`);
+      console.log(`  ZEABUR_URL: ${process.env.ZEABUR_URL || 'undefined'}`);
+      console.log(`  APP_DOMAIN: ${process.env.APP_DOMAIN || 'undefined'}`);
+      console.log(`  NODE_ENV: ${process.env.NODE_ENV || 'undefined'}`);
+      console.log(`  CODESPACES: ${process.env.CODESPACES || 'undefined'}`);
+      console.log(`  CODESPACE_NAME: ${process.env.CODESPACE_NAME || 'undefined'}`);
+
       // 1. Check for explicit environment variable override
       if (process.env.PREVIEW_HOST) {
+        console.log(`[PreviewManager] DEBUG: Using PREVIEW_HOST: ${process.env.PREVIEW_HOST}`);
         return process.env.PREVIEW_HOST.trim();
       }
 
       // 2. Check for Zeabur environment
       // Zeabur sets ZEABUR=1 and provides ZEABUR_URL or similar
       if (process.env.ZEABUR === '1' || process.env.ZEABUR_SERVICE_ID) {
+        console.log('[PreviewManager] DEBUG: Detected Zeabur environment via ZEABUR flags');
         // Try to extract domain from ZEABUR_URL or use APP_DOMAIN
         if (process.env.ZEABUR_URL) {
           try {
             const url = new URL(process.env.ZEABUR_URL);
+            console.log(`[PreviewManager] DEBUG: Extracted hostname from ZEABUR_URL: ${url.hostname}`);
             return url.hostname;
-          } catch {
+          } catch (error) {
+            console.log(`[PreviewManager] DEBUG: Failed to parse ZEABUR_URL: ${error}`);
             // Invalid URL, continue to next check
           }
         }
         // Fallback to APP_DOMAIN for Zeabur
         if (process.env.APP_DOMAIN) {
+          console.log(`[PreviewManager] DEBUG: Using APP_DOMAIN for Zeabur: ${process.env.APP_DOMAIN}`);
           return process.env.APP_DOMAIN;
         }
+      }
+
+      // 2.5. Check for Zeabur environment by APP_DOMAIN pattern (fallback detection)
+      // If APP_DOMAIN contains zeabur.app, assume it's a Zeabur deployment
+      if (process.env.APP_DOMAIN && process.env.APP_DOMAIN.includes('zeabur.app')) {
+        console.log(`[PreviewManager] DEBUG: Detected Zeabur environment via APP_DOMAIN pattern: ${process.env.APP_DOMAIN}`);
+        return process.env.APP_DOMAIN;
       }
 
       // 3. Check for Codespaces environment
       if (process.env.CODESPACES === 'true' && process.env.CODESPACE_NAME) {
         const codespaceName = process.env.CODESPACE_NAME;
-        return `${codespaceName}-${preferredPort}.preview.app.github.dev`;
+        const hostname = `${codespaceName}-${preferredPort}.preview.app.github.dev`;
+        console.log(`[PreviewManager] DEBUG: Using Codespaces hostname: ${hostname}`);
+        return hostname;
       }
 
       // 4. Check for GitHub Dev environment
       if (process.env.GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN) {
+        console.log(`[PreviewManager] DEBUG: Using GitHub Dev domain: ${process.env.GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN}`);
         return process.env.GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN;
       }
 
       // 5. Check for custom domain from environment
       if (process.env.APP_DOMAIN) {
+        console.log(`[PreviewManager] DEBUG: Using APP_DOMAIN: ${process.env.APP_DOMAIN}`);
         return process.env.APP_DOMAIN;
       }
 
@@ -780,6 +806,7 @@ class PreviewManager {
       }
 
       // 7. Default to localhost for local development
+      console.log('[PreviewManager] DEBUG: Falling back to localhost');
       return 'localhost';
     };
 

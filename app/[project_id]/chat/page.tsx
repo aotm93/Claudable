@@ -292,6 +292,16 @@ export default function ChatPage() {
     [cliStatuses]
   );
 
+  // Compute the actual preview URL: prioritize published URL if deployment is ready
+  const actualPreviewUrl = useMemo(() => {
+    // If deployed and ready, use the published URL
+    if (deploymentStatus === 'ready' && publishedUrl) {
+      return publishedUrl;
+    }
+    // Otherwise use local preview URL
+    return previewUrl;
+  }, [deploymentStatus, publishedUrl, previewUrl]);
+
   const updatePreferredCli = useCallback((cli: string) => {
     const sanitized = sanitizeCli(cli);
     setPreferredCli(sanitized);
@@ -796,19 +806,19 @@ const persistProjectPreferences = useCallback(
   }, [projectId]);
 
   // Navigate to specific route in iframe
-  const navigateToRoute = (route: string) => {
-    if (previewUrl && iframeRef.current) {
-      const baseUrl = previewUrl.split('?')[0]; // Remove any query params
+  const navigateToRoute = useCallback((route: string) => {
+    if (actualPreviewUrl && iframeRef.current) {
+      const baseUrl = actualPreviewUrl.split('?')[0]; // Remove any query params
       // Ensure route starts with /
       const normalizedRoute = route.startsWith('/') ? route : `/${route}`;
       const newUrl = `${baseUrl}${normalizedRoute}`;
       iframeRef.current.src = newUrl;
       setCurrentRoute(normalizedRoute);
     }
-  };
+  }, [actualPreviewUrl]);
 
   const refreshPreview = useCallback(() => {
-    if (!previewUrl || !iframeRef.current) {
+    if (!actualPreviewUrl || !iframeRef.current) {
       return;
     }
 
@@ -817,14 +827,14 @@ const persistProjectPreferences = useCallback(
         currentRoute && currentRoute.startsWith('/')
           ? currentRoute
           : `/${currentRoute || ''}`;
-      const baseUrl = previewUrl.split('?')[0] || previewUrl;
+      const baseUrl = actualPreviewUrl.split('?')[0] || actualPreviewUrl;
       const url = new URL(baseUrl + normalizedRoute);
       url.searchParams.set('_ts', Date.now().toString());
       iframeRef.current.src = url.toString();
     } catch (error) {
       console.warn('Failed to refresh preview iframe:', error);
     }
-  }, [previewUrl, currentRoute]);
+  }, [actualPreviewUrl, currentRoute]);
 
 
   const stop = useCallback(async () => {
@@ -2362,7 +2372,7 @@ const persistProjectPreferences = useCallback(
                   </div>
                   
                   {/* Center Controls */}
-                  {showPreview && previewUrl && (
+                  {showPreview && actualPreviewUrl && (
                     <div className="flex items-center gap-3">
                       {/* Route Navigation */}
                       <div className="h-9 flex items-center bg-gray-100 rounded-lg px-3 border border-gray-200 ">
@@ -2392,6 +2402,22 @@ const persistProjectPreferences = useCallback(
                           <FaArrowRight size={12} />
                         </button>
                       </div>
+                      
+                      {/* Preview Mode Indicator */}
+                      {deploymentStatus === 'ready' && publishedUrl && (
+                        <div className="h-9 flex items-center bg-green-50 border border-green-200 rounded-lg px-3">
+                          <span className="text-xs font-medium text-green-700">
+                            🌐 Live (Deployed)
+                          </span>
+                        </div>
+                      )}
+                      {(!publishedUrl || deploymentStatus !== 'ready') && previewUrl && (
+                        <div className="h-9 flex items-center bg-blue-50 border border-blue-200 rounded-lg px-3">
+                          <span className="text-xs font-medium text-blue-700">
+                            💻 Local Preview
+                          </span>
+                        </div>
+                      )}
                       
                       {/* Action Buttons Group */}
                       <div className="flex items-center gap-1.5">
@@ -2460,7 +2486,7 @@ const persistProjectPreferences = useCallback(
                   )}
                   
                   {/* Publish/Update */}
-                  {showPreview && previewUrl && (
+                  {showPreview && actualPreviewUrl && (
                     <div className="relative">
                     <button
                       className="h-9 flex items-center gap-2 px-3 bg-black text-white rounded-lg text-sm font-medium transition-colors hover:bg-gray-900 border border-black/10 shadow-sm"
@@ -2648,21 +2674,21 @@ const persistProjectPreferences = useCallback(
                     exit={{ opacity: 0 }}
                     style={{ height: '100%' }}
                   >
-                {previewUrl ? (
-                  <div className="relative w-full h-full bg-gray-100 flex items-center justify-center">
-                    <div 
-                      className={`bg-white ${
-                        deviceMode === 'mobile' 
-                          ? 'w-[375px] h-[667px] rounded-[25px] border-8 border-gray-800 shadow-2xl' 
-                          : 'w-full h-full'
-                      } overflow-hidden`}
-                    >
-                      <iframe 
-                        ref={iframeRef}
-                        className="w-full h-full border-none bg-white "
-                        src={previewUrl}
-                        allow="accelerometer; ambient-light-sensor; autoplay; battery; camera; display-capture; document-domain; encrypted-media; execution-while-not-rendered; execution-while-out-of-viewport; fullscreen; geolocation; gyroscope; magnetometer; microphone; midi; navigation-override; payment; picture-in-picture; publickey-credentials-get; sync-xhr; usb; vr; xr-spatial-tracking"
-                        sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox allow-presentation allow-top-navigation allow-top-navigation-by-user-activation"
+                {actualPreviewUrl ? (
+                 <div className="relative w-full h-full bg-gray-100 flex items-center justify-center">
+                   <div
+                     className={`bg-white ${
+                       deviceMode === 'mobile'
+                         ? 'w-[375px] h-[667px] rounded-[25px] border-8 border-gray-800 shadow-2xl'
+                         : 'w-full h-full'
+                     } overflow-hidden`}
+                   >
+                     <iframe
+                       ref={iframeRef}
+                       className="w-full h-full border-none bg-white "
+                       src={actualPreviewUrl}
+                       allow="accelerometer; ambient-light-sensor; autoplay; battery; camera; display-capture; document-domain; encrypted-media; execution-while-not-rendered; execution-while-out-of-viewport; fullscreen; geolocation; gyroscope; magnetometer; microphone; midi; navigation-override; payment; picture-in-picture; publickey-credentials-get; sync-xhr; usb; vr; xr-spatial-tracking"
+                       sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox allow-presentation allow-top-navigation allow-top-navigation-by-user-activation"
                         onError={() => {
                           // Show error overlay
                           const overlay = document.getElementById('iframe-error-overlay');
